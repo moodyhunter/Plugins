@@ -1,7 +1,7 @@
 project(QvPlugin-TrojanGo)
 cmake_minimum_required(VERSION 3.1.0)
 
-add_library(${PROJECT_NAME} MODULE
+add_library(${PROJECT_NAME} SHARED
     TrojanGoPlugin.hpp
     TrojanGoPlugin.cpp
     core/Common.hpp
