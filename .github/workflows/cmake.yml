@@ -3,8 +3,9 @@ name: CMake
 on:
   push:
 
-env:
-  BUILD_TYPE: Release
+defaults:
+  run:
+    shell: bash
 
 jobs:
   build:
@@ -35,14 +36,15 @@ jobs:
         arch: win64_msvc2019_64
         aqtversion: ==1.2.2
 
-    - name: Configure CMake
-      run: cmake -B ${{ github.workspace }}/build -DCMAKE_BUILD_TYPE=${{ env.BUILD_TYPE }} -DCMAKE_INSTALL_PREFIX=installed -GNinja -DALL_PLUGINS=ON
-
-    - name: Build
-      run: cmake --build ${{ github.workspace }}/build
-
-    - name: Installation
-      run: cmake --install ${{ github.workspace }}/build
+    - name: Build and Install
+      run: |
+        mkdir build; cd build
+        cmake .. -DCMAKE_BUILD_TYPE=Release \
+          -DCMAKE_INSTALL_PREFIX=../installed \
+          -DALL_PLUGINS=ON \
+          -GNinja
+        cmake --build .
+        cmake --install .
 
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
