@@ -27,7 +27,7 @@ jobs:
         arch: x64
 
     - name: Setup Ninja
-      uses: ashutoshvarma/setup-ninja@v3
+      uses: seanmiddleditch/gha-setup-ninja@v3
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
