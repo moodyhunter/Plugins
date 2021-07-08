@@ -2,6 +2,8 @@ name: CMake
 
 on:
   push:
+  release:
+    types: [prereleased]
 
 defaults:
   run:
@@ -46,8 +48,21 @@ jobs:
         cmake --build .
         cmake --install .
 
+    - name: Generate 7zip
+      run: 7z a Plugins.7z -- build/installed/
+
     - name: Upload artifacts
       uses: actions/upload-artifact@v2
       with:
-        name: QvPlugin-${{ runner.os }}.zip
-        path: build/installed/
+        name: QvPlugin-${{ runner.os }}.7z
+        path: Plugins.7z
+
+    - name: Upload to GitHub Release
+      uses: svenstaro/upload-release-action@v2
+      if: github.event_name == 'release'
+      with:
+        repo_token: ${{ secrets.GITHUB_TOKEN }}
+        file: Plugins.7z
+        asset_name: QvPlugin-${{ runner.os }}.7z
+        tag: ${{ github.ref }}
+        overwrite: true
