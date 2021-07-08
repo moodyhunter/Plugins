@@ -27,7 +27,7 @@ jobs:
         arch: x64
 
     - name: Setup Ninja
-      uses: ashutoshvarma/setup-ninja@v1.1
+      uses: ashutoshvarma/setup-ninja@v3
 
     - name: Install Qt
       uses: jurplel/install-qt-action@v2
@@ -40,7 +40,7 @@ jobs:
       run: |
         mkdir build; cd build
         cmake .. -DCMAKE_BUILD_TYPE=Release \
-          -DCMAKE_INSTALL_PREFIX=../installed \
+          -DCMAKE_INSTALL_PREFIX=installed \
           -DALL_PLUGINS=ON \
           -GNinja
         cmake --build .
@@ -50,4 +50,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: QvPlugin-${{ runner.os }}.zip
-        path: installed/
+        path: build/installed/
