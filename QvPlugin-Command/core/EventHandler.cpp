@@ -17,7 +17,7 @@ void SimpleEventHandler::ProcessEvent(const Connectivity::EventObject &pluginEve
     ///  --> port for that protocol, (e.g. $INBOUND_http as HTTP port)
     ///
     CommandPluginConfig settings;
-    settings.loadJson(PluginInstance->GetSettings());
+    settings.loadJson(CommandPlugin::PluginInstance->GetSettings());
 
     QStringList actions;
     switch (pluginEvent.Type)
@@ -45,6 +45,7 @@ void SimpleEventHandler::ProcessEvent(const Connectivity::EventObject &pluginEve
     }
     for (const auto &action : actions)
     {
+        CommandPlugin::ShowMessageBox("TODO", "TODO");
         //        auto _command = action;
         //        _command.replace("$$DISPLAYNAME", pluginEvent.name);
         //        for (const auto &protocol : pluginEvent.InboundPorts.keys())
@@ -58,7 +59,7 @@ void SimpleEventHandler::ProcessEvent(const Connectivity::EventObject &pluginEve
         //            auto returnvalue = QProcess::execute(_command);
         //            if (returnvalue != 0)
         //            {
-        //                PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
+        //                CommandPlugin::Log("Failed to execute command : \"" + action + "\"");
         //            }
         //        }
         //        else
@@ -76,7 +77,7 @@ void SimpleEventHandler::ProcessEvent(const SystemProxy::EventObject &pluginEven
     /// $$SOCKS: SOCKS port (could be 0)
     ///
     CommandPluginConfig settings;
-    settings.loadJson(PluginInstance->GetSettings());
+    settings.loadJson(CommandPlugin::PluginInstance->GetSettings());
     QStringList actions;
     switch (pluginEvent.State)
     {
@@ -104,7 +105,7 @@ void SimpleEventHandler::ProcessEvent(const SystemProxy::EventObject &pluginEven
             auto returnvalue = QProcess::execute(_command);
             if (returnvalue != 0)
             {
-                PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
+                CommandPlugin::PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
             }
         }
         else
@@ -123,7 +124,7 @@ void SimpleEventHandler::ProcessEvent(const ConnectionEntry::EventObject &plugin
     ///
 
     CommandPluginConfig settings;
-    settings.loadJson(PluginInstance->GetSettings());
+    settings.loadJson(CommandPlugin::PluginInstance->GetSettings());
 
     QStringList actions;
     switch (pluginEvent.Type)
@@ -156,8 +157,9 @@ void SimpleEventHandler::ProcessEvent(const ConnectionEntry::EventObject &plugin
     }
     for (const auto &action : actions)
     {
+        CommandPlugin::ShowMessageBox("TODO", "TODO");
         //        auto _command = action;
-        //        _command.replace("$$DISPLAYNAME", pluginEvent.CurrentName);
+        //        _command.replace("$$DISPLAYNAME", "TODO");
         //        _command.replace("$$ORIGINAL_NAME", pluginEvent.OriginalName);
         //        bool detached = _command.contains("$$CALL");
         //        _command.replace("$$CALL", "");
@@ -166,7 +168,7 @@ void SimpleEventHandler::ProcessEvent(const ConnectionEntry::EventObject &plugin
         //            auto returnvalue = QProcess::execute(_command);
         //            if (returnvalue != 0)
         //            {
-        //                PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
+        //                CommandPlugin::PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
         //            }
         //        }
         //        else
