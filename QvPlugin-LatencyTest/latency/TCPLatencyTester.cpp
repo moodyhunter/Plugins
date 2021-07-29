@@ -57,6 +57,8 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                     auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
                     long ms = milliseconds.count();
                     response.avg += ms;
+#undef max
+#undef min
                     response.worst = std::max(response.worst, ms);
                     response.best = std::min(response.best, ms);
                     h.clear();

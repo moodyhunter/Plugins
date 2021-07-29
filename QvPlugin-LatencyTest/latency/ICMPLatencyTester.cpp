@@ -304,6 +304,8 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
             else
             {
                 response.avg += res;
+#undef max
+#undef min
                 response.best = std::min(res, response.best);
                 response.worst = std::max(res, response.worst);
                 successCount++;
