@@ -69,51 +69,51 @@ void SimpleEventHandler::ProcessEvent(const Connectivity::EventObject &pluginEve
     }
 }
 
-void SimpleEventHandler::ProcessEvent(const SystemProxy::EventObject &pluginEvent)
-{
-    ///
-    /// Variables:
-    /// $$HTTP: HTTP port (could be 0)
-    /// $$SOCKS: SOCKS port (could be 0)
-    ///
-    CommandPluginConfig settings;
-    settings.loadJson(CommandPlugin::PluginInstance->GetSettings());
-    QStringList actions;
-    switch (pluginEvent.State)
-    {
-        case SystemProxy::SetProxy:
-        {
-            actions << settings.setSystemProxy.split(QRegExp("[\r\n]"), Qt::SkipEmptyParts);
-            break;
-        }
-        case SystemProxy::ClearProxy:
-        {
-            actions << settings.clearSystemProxy.split(QRegExp("[\r\n]"), Qt::SkipEmptyParts);
-            break;
-        }
-    }
+// void SimpleEventHandler::ProcessEvent(const SystemProxy::EventObject &pluginEvent)
+//{
+//    ///
+//    /// Variables:
+//    /// $$HTTP: HTTP port (could be 0)
+//    /// $$SOCKS: SOCKS port (could be 0)
+//    ///
+//    CommandPluginConfig settings;
+//    settings.loadJson(CommandPlugin::PluginInstance->GetSettings());
+//    QStringList actions;
+//    switch (pluginEvent.State)
+//    {
+//        case SystemProxy::SetProxy:
+//        {
+//            actions << settings.setSystemProxy.split(QRegExp("[\r\n]"), Qt::SkipEmptyParts);
+//            break;
+//        }
+//        case SystemProxy::ClearProxy:
+//        {
+//            actions << settings.clearSystemProxy.split(QRegExp("[\r\n]"), Qt::SkipEmptyParts);
+//            break;
+//        }
+//    }
 
-    for (const auto &action : actions)
-    {
-        auto _command = action;
-        _command.replace("$$HTTP", QString::number(pluginEvent.PortSettings[SystemProxy::SystemProxy_HTTP]));
-        _command.replace("$$SOCKS", QString::number(pluginEvent.PortSettings[SystemProxy::SystemProxy_SOCKS]));
-        bool detached = _command.contains("$$CALL");
-        _command.replace("$$CALL", "");
-        if (detached)
-        {
-            auto returnvalue = QProcess::execute(_command);
-            if (returnvalue != 0)
-            {
-                CommandPlugin::PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
-            }
-        }
-        else
-        {
-            QProcess::startDetached(_command);
-        }
-    }
-}
+//    for (const auto &action : actions)
+//    {
+//        auto _command = action;
+//        _command.replace("$$HTTP", QString::number(pluginEvent.PortSettings[SystemProxy::SystemProxy_HTTP]));
+//        _command.replace("$$SOCKS", QString::number(pluginEvent.PortSettings[SystemProxy::SystemProxy_SOCKS]));
+//        bool detached = _command.contains("$$CALL");
+//        _command.replace("$$CALL", "");
+//        if (detached)
+//        {
+//            auto returnvalue = QProcess::execute(_command);
+//            if (returnvalue != 0)
+//            {
+//                CommandPlugin::PluginInstance->PluginLog("Failed to execute command : \"" + action + "\"");
+//            }
+//        }
+//        else
+//        {
+//            QProcess::startDetached(_command);
+//        }
+//    }
+//}
 
 void SimpleEventHandler::ProcessEvent(const ConnectionEntry::EventObject &pluginEvent)
 {

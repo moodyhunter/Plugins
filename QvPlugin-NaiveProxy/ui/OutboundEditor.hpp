@@ -4,7 +4,7 @@
 #include "ui_OutboundEditor.h"
 
 class OutboundEditor
-    : public Qv2rayPlugin::Gui::QvPluginEditor
+    : public Qv2rayPlugin::Gui::PluginProtocolEditor
     , private Ui::OutboundEditor
 {
     Q_OBJECT
@@ -12,11 +12,9 @@ class OutboundEditor
   public:
     explicit OutboundEditor(QWidget *parent = nullptr);
 
-    void SetContent(const IOProtocolSettings &) override;
-    const IOProtocolSettings GetContent() const override
-    {
-        return IOProtocolSettings{ root };
-    }
+  public:
+    virtual void Load() override;
+    virtual void Store() override{};
 
   protected:
     void changeEvent(QEvent *e) override;

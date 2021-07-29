@@ -5,7 +5,7 @@
 
 using namespace Qv2rayPlugin;
 
-class CommandGUIInterface : public Qv2rayPlugin::Gui::PluginGUIInterface
+class CommandGUIInterface : public Qv2rayPlugin::Gui::Qv2rayGUIInterface
 {
   public:
     QIcon Icon() const override
@@ -18,22 +18,22 @@ class CommandGUIInterface : public Qv2rayPlugin::Gui::PluginGUIInterface
         return { GUI_COMPONENT_SETTINGS };
     }
 
-    std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> createSettingsWidgets() const override
+    std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> GetSettingsWidget() const override
     {
         return std::make_unique<CommandPluginSettings>();
     }
 
-    QList<typed_plugin_editor> createInboundEditors() const override
+    PluginEditorDescriptor GetInboundEditors() const override
     {
         return {};
     }
 
-    QList<typed_plugin_editor> createOutboundEditors() const override
+    PluginEditorDescriptor GetOutboundEditors() const override
     {
         return {};
     }
 
-    std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> createMainWindowWidget() const override
+    std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> GetMainWindowWidget() const override
     {
         return nullptr;
     }

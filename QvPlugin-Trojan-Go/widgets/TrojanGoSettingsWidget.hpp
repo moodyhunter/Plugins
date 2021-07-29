@@ -21,15 +21,8 @@ class TrojanGoSettingsWidget
 
   public:
     explicit TrojanGoSettingsWidget(QWidget *parent = nullptr);
-    void SetSettings(const QJsonObject &s) override
-    {
-        settings = s;
-        kernelPathTxt->setText(settings["kernelPath"].toString());
-    }
-    QJsonObject GetSettings() override
-    {
-        return settings;
-    }
+    virtual void Load() override;
+    virtual void Store() override;
 
   protected:
     void changeEvent(QEvent *e) override;
@@ -42,7 +35,6 @@ class TrojanGoSettingsWidget
     void on_testKernelBtn_clicked();
 
   private:
-    QJsonObject settings;
     QTimer debounceTimer;
 
   private:

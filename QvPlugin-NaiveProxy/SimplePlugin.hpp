@@ -23,7 +23,7 @@ class NaiveProxyPlugin
                                  "Qv2ray Workgroup",                //
                                  PluginId{ "qvplugin_naiveproxy" }, //
                                  "NaiveProxy Plugin.",              //
-                                 "",                                //
+                                 QUrl{},                            //
                                  {
                                      COMPONENT_GUI,             //
                                      COMPONENT_KERNEL,          //

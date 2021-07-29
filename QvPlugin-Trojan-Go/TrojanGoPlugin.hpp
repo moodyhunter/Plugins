@@ -24,7 +24,7 @@ class QvTrojanGoPlugin
                                  "Qv2ray Workgroup",                                 //
                                  PluginId{ "qvtrojango_plugin" },                    //
                                  "Connect to Trojan-GFW/Trojan-Go server in Qv2ray", //
-                                 "",                                                 //
+                                 QUrl{},                                             //
                                  {
                                      COMPONENT_GUI,             //
                                      COMPONENT_KERNEL,          //

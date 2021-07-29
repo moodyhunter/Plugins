@@ -167,3 +167,13 @@ void TrojanGoSettingsWidget::on_testKernelBtn_clicked()
     QString output = process.readAllStandardOutput();
     QMessageBox::information(this, tr("Trojan-Go Test Result"), output);
 }
+
+
+void TrojanGoSettingsWidget::Load()
+{
+    kernelPathTxt->setText(settings["kernelPath"].toString());
+}
+
+void TrojanGoSettingsWidget::Store()
+{
+}

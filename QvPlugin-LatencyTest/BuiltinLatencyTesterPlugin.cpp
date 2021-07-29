@@ -6,6 +6,8 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
 {
     class LatencyHandler : public ILatencyHandler
     {
+      public:
+        LatencyHandler() = default;
         const LatencyTestEngineId TCPEngineId{ "qv2ray_tcp" };
         const LatencyTestEngineId ICMPEngineId{ "qv2ray_icmp" };
         virtual QList<LatencyTestEngineInfo> PluginLatencyTestEngines() const
@@ -13,6 +15,7 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
             return { LatencyTestEngineInfo{ TCPEngineId, true, "TCP Connect Latency", "", { []() { return std::make_unique<Static_TCP_LatencyTestEngine>(); } } },
                      LatencyTestEngineInfo{ ICMPEngineId, true, "ICMP Ping Latency", "", { []() { return std::make_unique<Static_TCP_LatencyTestEngine>(); } } } };
         };
+        Q_DISABLE_COPY(LatencyHandler)
     };
 
     const QvPluginMetadata BuiltinLatencyTesterPlugin::GetMetadata() const
@@ -21,12 +24,8 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                  "Qv2rayBase Development Team",                                                            //
                  PluginId{ "qvplugin_builtin_latency_tester" },                                            //
                  "Builtin Latency Test Engine Provider, with TCP and ICMP latency test engine supported.", //
-                 "",                                                                                       //
+                 QUrl{},                                                                                   //
                  { COMPONENT_LATENCY_TEST_ENGINE } };
-    }
-
-    BuiltinLatencyTesterPlugin::~BuiltinLatencyTesterPlugin()
-    {
     }
 
     bool BuiltinLatencyTesterPlugin::InitializePlugin()

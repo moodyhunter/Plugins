@@ -25,7 +25,7 @@ class CommandPlugin
                                  "Qv2ray Workgroup",                                  //
                                  PluginId{ "qvplugin_command" },                      //
                                  "Run any command when an event from Qv2ray occurs.", //
-                                 "",                                                  //
+                                 QUrl{},                                              //
                                  {
                                      COMPONENT_EVENT_HANDLER, //
                                      COMPONENT_GUI            //

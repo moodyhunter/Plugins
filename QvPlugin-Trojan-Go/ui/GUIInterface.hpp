@@ -4,7 +4,7 @@
 #include "widgets/TrojanGoSettingsWidget.hpp"
 
 using namespace Qv2rayPlugin;
-class TrojanGoGUIInterface : public Qv2rayPlugin::Gui::PluginGUIInterface
+class TrojanGoGUIInterface : public Qv2rayPlugin::Gui::Qv2rayGUIInterface
 {
     QIcon Icon() const override
     {
@@ -16,22 +16,22 @@ class TrojanGoGUIInterface : public Qv2rayPlugin::Gui::PluginGUIInterface
         return { GUI_COMPONENT_SETTINGS, GUI_COMPONENT_OUTBOUND_EDITOR };
     }
 
-    std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> createSettingsWidgets() const override
+    std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> GetSettingsWidget() const override
     {
         return std::make_unique<TrojanGoSettingsWidget>();
     }
 
-    QList<typed_plugin_editor> createInboundEditors() const override
+    PluginEditorDescriptor GetInboundEditors() const override
     {
         return {};
     }
 
-    QList<typed_plugin_editor> createOutboundEditors() const override
+    PluginEditorDescriptor GetOutboundEditors() const override
     {
-        return { Qv2rayPlugin::Gui::make_editor_info<TrojanGoOutboundWidget>("trojan-go", "Trojan Go") };
+        return { make_editor_info<TrojanGoOutboundWidget>("trojan-go", "Trojan Go") };
     }
 
-    std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> createMainWindowWidget() const override
+    std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> GetMainWindowWidget() const override
     {
         return nullptr;
     }

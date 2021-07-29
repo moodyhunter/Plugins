@@ -6,25 +6,25 @@
 
 using namespace Qv2rayPlugin;
 
-class NaiveUIInterface : public Qv2rayPlugin::Gui::PluginGUIInterface
+class NaiveUIInterface : public Qv2rayPlugin::Gui::Qv2rayGUIInterface
 {
     QIcon Icon() const override
     {
         return QIcon(":/assets/naive.png");
     }
-    virtual std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> createSettingsWidgets() const override
+    virtual std::unique_ptr<Qv2rayPlugin::Gui::PluginSettingsWidget> GetSettingsWidget() const override
     {
         return std::make_unique<SettingsWidget>();
     }
-    virtual QList<typed_plugin_editor> createInboundEditors() const override
+    virtual PluginEditorDescriptor GetInboundEditors() const override
     {
         return {};
     }
-    virtual QList<typed_plugin_editor> createOutboundEditors() const override
+    virtual PluginEditorDescriptor GetOutboundEditors() const override
     {
-        return { Qv2rayPlugin::Gui::make_editor_info<OutboundEditor>("naive", "NaiveProxy") };
+        return { make_editor_info<OutboundEditor>("naive", "NaiveProxy") };
     }
-    virtual std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> createMainWindowWidget() const override
+    virtual std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> GetMainWindowWidget() const override
     {
         return nullptr;
     }

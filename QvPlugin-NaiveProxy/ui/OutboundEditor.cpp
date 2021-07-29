@@ -1,19 +1,18 @@
 #include "OutboundEditor.hpp"
 
-OutboundEditor::OutboundEditor(QWidget *parent) : Qv2rayPlugin::Gui::QvPluginEditor(parent)
+OutboundEditor::OutboundEditor(QWidget *parent) : Qv2rayPlugin::Gui::PluginProtocolEditor(parent)
 {
     setupUi(this);
 }
 
-void OutboundEditor::SetContent(const IOProtocolSettings &r)
+void OutboundEditor::Load()
 {
-    root = r;
-    const auto protocol = root["protocol"].toString();
+    const auto protocol = settings["protocol"].toString();
 
-    textUsername->setText(root["username"].toString());
-    textPassword->setText(root["password"].toString());
-    comboProtocol->setCurrentText(protocol != "https" && protocol != "quic" ? "https" : root["protocol"].toString());
-    checkPadding->setChecked(root["padding"].toBool());
+    textUsername->setText(settings["username"].toString());
+    textPassword->setText(settings["password"].toString());
+    comboProtocol->setCurrentText(protocol != "https" && protocol != "quic" ? "https" : settings["protocol"].toString());
+    checkPadding->setChecked(settings["padding"].toBool());
 }
 
 void OutboundEditor::changeEvent(QEvent *e)

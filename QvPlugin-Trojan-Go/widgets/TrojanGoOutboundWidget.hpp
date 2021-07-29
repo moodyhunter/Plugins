@@ -5,7 +5,7 @@
 #include "ui_TrojanGoOutboundWidget.h"
 
 class TrojanGoOutboundWidget
-    : public Qv2rayPlugin::Gui::QvPluginEditor
+    : public Qv2rayPlugin::Gui::PluginProtocolEditor
     , private Ui::TrojanGoOutboundWidget
 {
     Q_OBJECT
@@ -13,27 +13,11 @@ class TrojanGoOutboundWidget
   public:
     explicit TrojanGoOutboundWidget(QWidget *parent = nullptr);
 
-    void SetContent(const IOProtocolSettings &o) override
-    {
-        config.loadJson(o);
-        sniTxt->setText(config.sni);
-        hostTxt->setText(config.host);
-        pathTxt->setText(config.path);
-        typeCombo->setCurrentText(TRANSPORT_TYPE_STRING_MAP[config.type]);
-        encryptionTxt->setText(config.encryption);
-        passwordTxt->setText(config.password);
-        muxCB->setChecked(config.mux);
-        on_typeCombo_currentIndexChanged(typeCombo->currentIndex());
-    }
-
-    const IOProtocolSettings GetContent() const override
-    {
-        return IOProtocolSettings{ config.toJson() };
-    }
-
   protected:
     TrojanGoShareLinkObject config;
     void changeEvent(QEvent *e) override;
+    virtual void Load() override;
+    virtual void Store() override;
 
   private slots:
     void on_sniTxt_textEdited(const QString &arg1);
