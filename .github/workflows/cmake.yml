@@ -38,6 +38,10 @@ jobs:
         arch: win64_msvc2019_64
         aqtversion: ==1.2.2
 
+    - name: Install Vulkan SDK
+      if: matrix.platform != 'macos-latest'
+      uses: humbletim/setup-vulkan-sdk@v1.0.2
+
     - name: Build and Install
       run: |
         mkdir build; cd build
