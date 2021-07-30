@@ -1,7 +1,5 @@
 #include "TCPLatencyTester.hpp"
 
-#include "WinSock2.h"
-
 namespace Qv2rayBase::BuiltinPlugins::Latency
 {
     constexpr int TCP_CONNECTION_TIMEOUT_SECS = 5;
