@@ -240,18 +240,18 @@ ICMPTestEngine::~ICMPTestEngine()
 {
 }
 
-void ICMPTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
+void ICMPTestEngine::Prepare()
 {
 }
 
-void ICMPTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
+void ICMPTestEngine::StartTestAsync()
 {
     waitHandleTimer = loop->resource<uvw::TimerHandle>();
     waitHandleTimer->on<uvw::TimerEvent>(
         [ptr = shared_from_this(), this](auto &&, auto &&)
         {
             SleepEx(0, TRUE);
-            if (response.failed + successCount == response.total)
+            if (response.failed + response.succeeded == response.total)
             {
                 waitHandleTimer->stop();
                 waitHandleTimer->close();
@@ -300,7 +300,7 @@ void ICMPTestEngine::pingImpl()
 #undef min
                                             response.best = std::min(res, response.best);
                                             response.worst = std::max(res, response.worst);
-                                            successCount++;
+                                            response.succeeded++;
                                         }
                                         checkAndFinalize();
                                     } };
@@ -346,6 +346,6 @@ void ICMPTestEngine::pingImpl()
 
 bool ICMPTestEngine::checkAndFinalize()
 {
-    return response.failed + successCount == response.total;
+    return response.failed + response.succeeded == response.total;
 }
 #endif
