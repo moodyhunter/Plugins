@@ -17,95 +17,96 @@
 #define SOL_IP 0
 #endif
 
-namespace Qv2rayBase::BuiltinPlugins::Latency
+/// 1s complementary checksum
+uint16_t ping_checksum(const char *buf, size_t size)
 {
-    /// 1s complementary checksum
-    uint16_t ping_checksum(const char *buf, size_t size)
+    size_t i;
+    uint64_t sum = 0;
+
+    for (i = 0; i < size; i += 2)
     {
-        size_t i;
-        uint64_t sum = 0;
-
-        for (i = 0; i < size; i += 2)
-        {
-            sum += *(uint16_t *) buf;
-            buf += 2;
-        }
-        if (size - i > 0)
-        {
-            sum += *(uint8_t *) buf;
-        }
-
-        while ((sum >> 16) != 0)
-        {
-            sum = (sum & 0xffff) + (sum >> 16);
-        }
-
-        return (uint16_t) ~sum;
+        sum += *(uint16_t *) buf;
+        buf += 2;
+    }
+    if (size - i > 0)
+    {
+        sum += *(uint8_t *) buf;
     }
 
-    void Static_ICMP_LatencyTestEngine::deinit()
+    while ((sum >> 16) != 0)
     {
-        if (socketId >= 0)
-        {
-            close(socketId);
-            socketId = -1;
-        }
+        sum = (sum & 0xffff) + (sum >> 16);
     }
 
-    bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
-    {
-        if (response.failed + successCount == TOTAL_TEST_COUNT)
-        {
-            if (timeoutTimer)
-            {
-                timeoutTimer->stop();
-                timeoutTimer->clear();
-                timeoutTimer->close();
-            }
-            if (pollHandle)
-            {
-                if (!pollHandle->closing())
-                    pollHandle->stop();
-                pollHandle->clear();
-                pollHandle->close();
-            }
-            return true;
-        }
-        return false;
-    }
+    return (uint16_t) ~sum;
+}
 
-    Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
+void Static_ICMP_LatencyTestEngine::deinit()
+{
+    if (socketId >= 0)
     {
-        deinit();
+        close(socketId);
+        socketId = -1;
     }
+}
 
-    void Static_ICMP_LatencyTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
+bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
+{
+#pragma message("TODO:? ")
+    if (response.failed /*+ successCount*/ == TOTAL_TEST_COUNT)
     {
-        int ttl = 30;
-        if (((socketId = socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP)) < 0))
+        if (timeoutTimer)
         {
-            response.error = "EPING_SOCK: " + QObject::tr("Socket creation failed");
-            response.avg = LATENCY_TEST_VALUE_ERROR;
-            errored = true;
-            return;
+            timeoutTimer->stop();
+            timeoutTimer->clear();
+            timeoutTimer->close();
         }
-        // set TTL
-        if (setsockopt(socketId, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
+        if (pollHandle)
         {
-            response.error = "EPING_TTL: " + QObject::tr("Failed to setup TTL value");
-            response.avg = LATENCY_TEST_VALUE_ERROR;
-            errored = true;
-            return;
-            return;
+            if (!pollHandle->closing())
+                pollHandle->stop();
+            pollHandle->clear();
+            pollHandle->close();
         }
+        return true;
     }
+    return false;
+}
 
-    void Static_ICMP_LatencyTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
+Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
+{
+    deinit();
+}
+
+void Static_ICMP_LatencyTestEngine::Prepare()
+{
+    int ttl = 30;
+    if (((socketId = socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP)) < 0))
     {
-        timeoutTimer = loop->resource<uvw::TimerHandle>();
-        uvw::OSSocketHandle osSocketHandle{ socketId };
-        pollHandle = loop->resource<uvw::PollHandle>(osSocketHandle);
-        timeoutTimer->once<uvw::TimerEvent>([this, ptr = std::weak_ptr<Static_ICMP_LatencyTestEngine>{ shared_from_this() }](auto &, uvw::TimerHandle &) {
+        response.error = "EPING_SOCK: " + QObject::tr("Socket creation failed");
+        response.avg = LATENCY_TEST_VALUE_ERROR;
+        errored = true;
+        return;
+    }
+    // set TTL
+    if (setsockopt(socketId, SOL_IP, IP_TTL, &ttl, sizeof(ttl)) != 0)
+    {
+        response.error = "EPING_TTL: " + QObject::tr("Failed to setup TTL value");
+        response.avg = LATENCY_TEST_VALUE_ERROR;
+        errored = true;
+        return;
+        return;
+    }
+}
+
+void Static_ICMP_LatencyTestEngine::StartTestAsync()
+{
+    timeoutTimer = loop->resource<uvw::TimerHandle>();
+    uvw::OSSocketHandle osSocketHandle{ socketId };
+    pollHandle = loop->resource<uvw::PollHandle>(osSocketHandle);
+    timeoutTimer->once<uvw::TimerEvent>(
+        [this, ptr = std::weak_ptr<Static_ICMP_LatencyTestEngine>{ shared_from_this() }](auto &, uvw::TimerHandle &)
+        {
             if (ptr.expired())
                 return;
             else
@@ -115,15 +116,16 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                 if (!pollHandle->closing())
                     pollHandle->stop();
                 pollHandle->close();
-                successCount = 0;
                 response.failed = response.total = TOTAL_TEST_COUNT;
                 checkAndFinalize();
             }
         });
 
-        timeoutTimer->start(uvw::TimerHandle::Time{ 10000 }, uvw::TimerHandle::Time{ 0 });
-        auto pollEvent = uvw::Flags<uvw::PollHandle::Event>::from<uvw::PollHandle::Event::READABLE>();
-        pollHandle->on<uvw::PollEvent>([this, ptr = shared_from_this()](uvw::PollEvent &, uvw::PollHandle &h) {
+    timeoutTimer->start(uvw::TimerHandle::Time{ 10000 }, uvw::TimerHandle::Time{ 0 });
+    auto pollEvent = uvw::Flags<uvw::PollHandle::Event>::from<uvw::PollHandle::Event::READABLE>();
+    pollHandle->on<uvw::PollEvent>(
+        [this, ptr = shared_from_this()](uvw::PollEvent &, uvw::PollHandle &h)
+        {
             timeval end;
             sockaddr_in addr;
             socklen_t slen = sizeof(sockaddr_in);
@@ -136,7 +138,7 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                     rlen = recvfrom(socketId, buf, 1024, 0, (struct sockaddr *) &addr, &slen);
                 } while (rlen == -1 && errno == EINTR);
 
-                // skip malformed
+            // skip malformed
 #ifdef Q_OS_MAC
                 if (rlen < sizeof(icmp) + 20)
 #else
@@ -159,7 +161,6 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                     case ICMP_ECHOREPLY:
                         gettimeofday(&end, nullptr);
                         response.avg += 1000 * (end.tv_sec - startTimevals[cur_seq - 1].tv_sec) + (end.tv_usec - startTimevals[cur_seq - 1].tv_usec) / 1000;
-                        successCount++;
                         checkAndFinalize();
                         continue;
                     case ICMP_UNREACH:
@@ -196,28 +197,28 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
             } while (rlen > 0);
         });
 
-        pollHandle->start(pollEvent);
+    pollHandle->start(pollEvent);
 
-        for (int i = 0; i < TOTAL_TEST_COUNT; ++i)
+    for (int i = 0; i < TOTAL_TEST_COUNT; ++i)
+    {
+        // prepare echo request packet
+        icmp _icmp_request;
+        memset(&_icmp_request, 0, sizeof(_icmp_request));
+        _icmp_request.icmp_type = ICMP_ECHO;
+        _icmp_request.icmp_hun.ih_idseq.icd_id = 0; // SOCK_DGRAM & 0 => id will be set by kernel
+        _icmp_request.icmp_hun.ih_idseq.icd_seq = seq++;
+        _icmp_request.icmp_cksum = ping_checksum(reinterpret_cast<char *>(&_icmp_request), sizeof(_icmp_request));
+        int n;
+        timeval start;
+        gettimeofday(&start, nullptr);
+        startTimevals.push_back(start);
+        do
         {
-            // prepare echo request packet
-            icmp _icmp_request;
-            memset(&_icmp_request, 0, sizeof(_icmp_request));
-            _icmp_request.icmp_type = ICMP_ECHO;
-            _icmp_request.icmp_hun.ih_idseq.icd_id = 0; // SOCK_DGRAM & 0 => id will be set by kernel
-            _icmp_request.icmp_hun.ih_idseq.icd_seq = seq++;
-            _icmp_request.icmp_cksum = ping_checksum(reinterpret_cast<char *>(&_icmp_request), sizeof(_icmp_request));
-            int n;
-            timeval start;
-            gettimeofday(&start, nullptr);
-            startTimevals.push_back(start);
-            do
-            {
-                n = ::sendto(socketId, &_icmp_request, sizeof(icmp), 0, (struct sockaddr *) &storage, sizeof(struct sockaddr));
-            } while (n < 0 && errno == EINTR);
-        }
+            n = ::sendto(socketId, &_icmp_request, sizeof(icmp), 0, (struct sockaddr *) &storage, sizeof(struct sockaddr));
+        } while (n < 0 && errno == EINTR);
     }
-} // namespace Qv2rayBase::BuiltinPlugins::Latency
+}
+
 #elif defined(Q_OS_WIN)
 
 typedef struct _IO_STATUS_BLOCK
@@ -240,21 +241,20 @@ typedef VOID(NTAPI *PIO_APC_ROUTINE)(IN PVOID ApcContext, IN PIO_STATUS_BLOCK Io
 #define PIO_APC_ROUTINE_DEFINED
 #include <IcmpAPI.h>
 
-namespace Qv2rayBase::BuiltinPlugins::Latency
+Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
 {
+}
 
-    Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
-    {
-    }
+void Static_ICMP_LatencyTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
+{
+}
 
-    void Static_ICMP_LatencyTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
-    {
-    }
-
-    void Static_ICMP_LatencyTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
-    {
-        waitHandleTimer = loop->resource<uvw::TimerHandle>();
-        waitHandleTimer->on<uvw::TimerEvent>([ptr = shared_from_this(), this](auto &&, auto &&) {
+void Static_ICMP_LatencyTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
+{
+    waitHandleTimer = loop->resource<uvw::TimerHandle>();
+    waitHandleTimer->on<uvw::TimerEvent>(
+        [ptr = shared_from_this(), this](auto &&, auto &&)
+        {
             SleepEx(0, TRUE);
             if (response.failed + successCount == response.total)
             {
@@ -263,93 +263,94 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
                 waitHandleTimer->clear();
             }
         });
-        for (; response.total < TOTAL_TEST_COUNT; ++response.total)
-        {
-            pingImpl();
-        }
-        waitHandleTimer->start(uvw::TimerHandle::Time{ 500 }, uvw::TimerHandle::Time{ 500 });
-    }
-
-    void Static_ICMP_LatencyTestEngine::pingImpl()
+    for (; response.total < TOTAL_TEST_COUNT; ++response.total)
     {
-        constexpr WORD payload_size = 1;
-        constexpr DWORD reply_buf_size = sizeof(ICMP_ECHO_REPLY) + payload_size + 8;
-        struct ICMPReply
-        {
-            ICMPReply(std::function<void(bool, long, const QString &, HANDLE)> f) : whenIcmpFailed(std::move(f))
-            {
-                hIcmpFile = IcmpCreateFile();
-            }
-            unsigned char reply_buf[reply_buf_size]{};
-            unsigned char payload[payload_size]{ 42 };
-            HANDLE hIcmpFile;
-            std::function<void(bool, long, const QString &, HANDLE)> whenIcmpFailed;
-            ~ICMPReply()
-            {
-                if (hIcmpFile != INVALID_HANDLE_VALUE)
-                    IcmpCloseHandle(hIcmpFile);
-            }
-        };
+        pingImpl();
+    }
+    waitHandleTimer->start(uvw::TimerHandle::Time{ 500 }, uvw::TimerHandle::Time{ 500 });
+}
 
-        auto icmpReply = new ICMPReply{ [this](bool isSuccess, long res, const QString &message, HANDLE) {
-            if (!isSuccess)
+void Static_ICMP_LatencyTestEngine::pingImpl()
+{
+    constexpr WORD payload_size = 1;
+    constexpr DWORD reply_buf_size = sizeof(ICMP_ECHO_REPLY) + payload_size + 8;
+    struct ICMPReply
+    {
+        ICMPReply(std::function<void(bool, long, const QString &, HANDLE)> f) : whenIcmpFailed(std::move(f))
+        {
+            hIcmpFile = IcmpCreateFile();
+        }
+        unsigned char reply_buf[reply_buf_size]{};
+        unsigned char payload[payload_size]{ 42 };
+        HANDLE hIcmpFile;
+        std::function<void(bool, long, const QString &, HANDLE)> whenIcmpFailed;
+        ~ICMPReply()
+        {
+            if (hIcmpFile != INVALID_HANDLE_VALUE)
+                IcmpCloseHandle(hIcmpFile);
+        }
+    };
+
+    auto icmpReply = new ICMPReply{ [this](bool isSuccess, long res, const QString &message, HANDLE)
+                                    {
+                                        if (!isSuccess)
+                                        {
+                                            response.error = message;
+                                            response.failed++;
+                                        }
+                                        else
+                                        {
+                                            response.avg += res;
+#undef max
+#undef min
+                                            response.best = std::min(res, response.best);
+                                            response.worst = std::max(res, response.worst);
+                                            successCount++;
+                                        }
+                                        checkAndFinalize();
+                                    } };
+
+    if (icmpReply->hIcmpFile == INVALID_HANDLE_VALUE)
+    {
+        response.error = "IcmpCreateFile failed";
+        response.failed++;
+        checkAndFinalize();
+        delete icmpReply;
+        return;
+    }
+    IcmpSendEcho2(
+        icmpReply->hIcmpFile, NULL,
+        [](PVOID ctx, PIO_STATUS_BLOCK b, ULONG r)
+        {
+            Q_UNUSED(r)
+            // static int i = 1;
+            // LOG("hit" + QSTRN(i++));
+            auto replyPtr = reinterpret_cast<ICMPReply *>(ctx);
+            auto isSuccess = (NTSTATUS(b->Status)) >= 0;
+            long res = 0;
+            QString message;
+            if (isSuccess)
             {
-                response.error = message;
-                response.failed++;
+                const ICMP_ECHO_REPLY *r = (const ICMP_ECHO_REPLY *) replyPtr->reply_buf;
+                res = r->RoundTripTime * 1000;
             }
             else
             {
-                response.avg += res;
-#undef max
-#undef min
-                response.best = std::min(res, response.best);
-                response.worst = std::max(res, response.worst);
-                successCount++;
+                auto e = GetLastError();
+                DWORD buf_size = 1000;
+                TCHAR buf[1000];
+                GetIpErrorString(e, buf, &buf_size);
+                message = "IcmpSendEcho returned error (" + QString::fromStdWString(buf) + ")";
             }
-            checkAndFinalize();
-        } };
+            replyPtr->whenIcmpFailed(isSuccess, res, message, replyPtr->hIcmpFile);
+            delete replyPtr;
+        },
+        icmpReply, reinterpret_cast<IPAddr &>(reinterpret_cast<sockaddr_in &>(storage).sin_addr), icmpReply->payload, payload_size, NULL, icmpReply->reply_buf,
+        reply_buf_size, 10000);
+}
 
-        if (icmpReply->hIcmpFile == INVALID_HANDLE_VALUE)
-        {
-            response.error = "IcmpCreateFile failed";
-            response.failed++;
-            checkAndFinalize();
-            delete icmpReply;
-            return;
-        }
-        IcmpSendEcho2(
-            icmpReply->hIcmpFile, NULL,
-            [](PVOID ctx, PIO_STATUS_BLOCK b, ULONG r) {
-                Q_UNUSED(r)
-                // static int i = 1;
-                // LOG("hit" + QSTRN(i++));
-                auto replyPtr = reinterpret_cast<ICMPReply *>(ctx);
-                auto isSuccess = (NTSTATUS(b->Status)) >= 0;
-                long res = 0;
-                QString message;
-                if (isSuccess)
-                {
-                    const ICMP_ECHO_REPLY *r = (const ICMP_ECHO_REPLY *) replyPtr->reply_buf;
-                    res = r->RoundTripTime * 1000;
-                }
-                else
-                {
-                    auto e = GetLastError();
-                    DWORD buf_size = 1000;
-                    TCHAR buf[1000];
-                    GetIpErrorString(e, buf, &buf_size);
-                    message = "IcmpSendEcho returned error (" + QString::fromStdWString(buf) + ")";
-                }
-                replyPtr->whenIcmpFailed(isSuccess, res, message, replyPtr->hIcmpFile);
-                delete replyPtr;
-            },
-            icmpReply, reinterpret_cast<IPAddr &>(reinterpret_cast<sockaddr_in &>(storage).sin_addr), icmpReply->payload, payload_size, NULL, icmpReply->reply_buf,
-            reply_buf_size, 10000);
-    }
-
-    bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
-    {
-        return response.failed + successCount == response.total;
-    }
-} // namespace Qv2rayBase::BuiltinPlugins::Latency
+bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
+{
+    return response.failed + successCount == response.total;
+}
 #endif

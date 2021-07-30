@@ -40,7 +40,7 @@
 #define coco_yield __co_yield_impl(__LINE__)
 #define coro(f) [this, ptr = (std::enable_shared_from_this<T>::shared_from_this())](auto &&e, auto &&h) { f(std::forward<decltype(e)>(e), std::forward<decltype(h)>(h)); }
 
-namespace Qv2rayBase::BuiltinPlugins::Latency::details
+namespace details
 {
     struct coroutine_ref;
     struct coroutine
@@ -70,168 +70,158 @@ namespace Qv2rayBase::BuiltinPlugins::Latency::details
         bool modified_;
     };
 
-} // namespace Qv2rayBase::BuiltinPlugins::Latency::details
+} // namespace details
 
-namespace Qv2rayBase::BuiltinPlugins::Latency
+template<typename T>
+class CommonDNSBasedAsyncLatencyTestEngine
+    : public details::coroutine
+    , public std::enable_shared_from_this<T>
+    , public Qv2rayPlugin::Latency::LatencyTestEngine
 {
-    template<typename T>
-    class CommonDNSBasedAsyncLatencyTestEngine
-        : public details::coroutine
-        , public std::enable_shared_from_this<T>
-        , public Qv2rayPlugin::Latency::LatencyTestEngine
+  public:
+    static constexpr int TOTAL_TEST_COUNT = 3;
+    CommonDNSBasedAsyncLatencyTestEngine() = default;
+    virtual ~CommonDNSBasedAsyncLatencyTestEngine() = default;
+
+  protected:
+    int isAddr(const QString &address, int port)
     {
-      public:
-        static constexpr int TOTAL_TEST_COUNT = 5;
-        CommonDNSBasedAsyncLatencyTestEngine() = default;
-        virtual ~CommonDNSBasedAsyncLatencyTestEngine() = default;
-
-      protected:
-        int isAddr(const QString &address, int port)
+        auto host = address.toStdString();
+        if (uv_ip4_addr(host.data(), port, reinterpret_cast<sockaddr_in *>(&storage)) == 0)
         {
-            auto host = address.toStdString();
-            if (uv_ip4_addr(host.data(), port, reinterpret_cast<sockaddr_in *>(&storage)) == 0)
-            {
-                return AF_INET;
-            }
-            if (uv_ip6_addr(host.data(), port, reinterpret_cast<sockaddr_in6 *>(&storage)) == 0)
-            {
-                return AF_INET6;
-            }
-            return -1;
+            return AF_INET;
         }
-
-      protected:
-        virtual void Prepare(std::shared_ptr<uvw::Loop>) = 0;
-        virtual void StartTest(std::shared_ptr<uvw::Loop>) = 0;
-
-      public:
-        virtual Qv2rayPlugin::Latency::LatencyTestResponse TestLatencyAsync(std::shared_ptr<uvw::Loop> loop,
-                                                                            const Qv2rayPlugin::Latency::LatencyTestRequest &req) override
+        if (uv_ip6_addr(host.data(), port, reinterpret_cast<sockaddr_in6 *>(&storage)) == 0)
         {
-            request = req;
-            Prepare(loop);
-            if (errored)
-                return response;
-            response.total = 0;
-            response.failed = 0;
-            response.worst = 0;
-            response.avg = 0;
-
-            if ((af = isAddr(req.host, req.port)), af == -1)
-            {
-                getAddrHandle = loop->resource<uvw::GetAddrInfoReq>();
-                sprintf(digitBuffer, "%d", req.port);
-            }
-
-            async_DNS_lookup(0, 0);
-
-            if (errored)
-                return response;
-
-            StartTest(loop);
-
-            if (response.failed + successCount == TOTAL_TEST_COUNT)
-            {
-                if (response.failed == TOTAL_TEST_COUNT)
-                    response.avg = LATENCY_TEST_VALUE_ERROR;
-                else
-                    response.error.clear(), response.avg = response.avg / successCount;
-            }
-
-            return response;
+            return AF_INET6;
         }
+        return -1;
+    }
 
-        template<typename E, typename H>
-        void async_DNS_lookup(E &&e, H &&h)
+  protected:
+    virtual void Prepare() = 0;
+    virtual void StartTestAsync() = 0;
+
+  public:
+    virtual void TestLatencyAsync(std::shared_ptr<uvw::Loop> loop, const Qv2rayPlugin::Latency::LatencyTestRequest &req) override
+    {
+        this->loop = loop;
+        request = req;
+        Prepare();
+        if (errored)
+            emit OnLatencyTestFinishedSignal(req.id, response);
+
+        response = Qv2rayPlugin::Latency::LatencyTestResponse();
+        response.total = TOTAL_TEST_COUNT;
+        response.avg = 0;
+        response.worst = 0;
+        response.best = 0;
+
+        if ((af = isAddr(req.host, req.port)), af == -1)
         {
-            coco_enter(*this)
+            // If the requested address is not a valid IP.
+            getAddrHandle = loop->resource<uvw::GetAddrInfoReq>();
+            sprintf(digitBuffer, "%d", req.port);
+            LookupDNS(0, 0);
+        }
+        else
+        {
+            StartTestAsync();
+        }
+    }
+
+    template<typename E, typename H>
+    void LookupDNS(E &&e, H &&h)
+    {
+        coco_enter(*this)
+        {
+            if (getAddrHandle)
             {
-                if (getAddrHandle)
+                getAddrHandle->once<uvw::ErrorEvent>(coro(LookupDNS));
+                getAddrHandle->once<uvw::AddrInfoEvent>(coro(LookupDNS));
+                coco_yield return getAddrHandle->addrInfo(request.host.toStdString(), digitBuffer);
+                coco_yield if constexpr (std::is_same_v<uvw::AddrInfoEvent, std::remove_reference_t<E>>)
                 {
-                    getAddrHandle->once<uvw::ErrorEvent>(coro(async_DNS_lookup));
-                    getAddrHandle->once<uvw::AddrInfoEvent>(coro(async_DNS_lookup));
-                    coco_yield return getAddrHandle->addrInfo(request.host.toStdString(), digitBuffer);
-                    coco_yield if constexpr (std::is_same_v<uvw::AddrInfoEvent, std::remove_reference_t<E>>)
+                    if (GetAddrInfoCallback(e) != 0)
                     {
-                        if (getAddrInfoRes(e) != 0)
-                        {
-                            response.error = QObject::tr("DNS not resolved");
-                            response.avg = LATENCY_TEST_VALUE_ERROR;
-                            h.clear();
-                            errored = true;
-                            return;
-                        }
+                        response.error = QObject::tr("DNS not resolved");
+                        response.avg = LATENCY_TEST_VALUE_ERROR;
+                        h.clear();
+                        errored = true;
+                        return;
                     }
-                    else // should be else?
+                }
+                else // should be else?
+                {
+                    if constexpr (std::is_same_v<uvw::ErrorEvent, std::remove_reference_t<E>>)
                     {
-                        if constexpr (std::is_same_v<uvw::ErrorEvent, std::remove_reference_t<E>>)
-                        {
-                            response.error = QObject::tr("DNS not resolved");
-                            response.avg = LATENCY_TEST_VALUE_ERROR;
-                            h.clear();
-                            errored = true;
-                            return;
-                        }
+                        response.error = QObject::tr("DNS not resolved");
+                        response.avg = LATENCY_TEST_VALUE_ERROR;
+                        h.clear();
+                        errored = true;
+                        return;
                     }
                 }
             }
-
-            if (getAddrHandle)
-                getAddrHandle->clear();
         }
 
-        int getAddrInfoRes(uvw::AddrInfoEvent &e)
+        StartTestAsync();
+
+        if (getAddrHandle)
+            getAddrHandle->clear();
+    }
+
+    int GetAddrInfoCallback(uvw::AddrInfoEvent &e)
+    {
+        struct addrinfo *rp = nullptr;
+        for (rp = e.data.get(); rp != nullptr; rp = rp->ai_next)
         {
-            struct addrinfo *rp = nullptr;
+            if (rp->ai_family == AF_INET)
+            {
+                if (rp->ai_family == AF_INET)
+                {
+                    af = AF_INET;
+                    memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in));
+                }
+                else if (rp->ai_family == AF_INET6)
+                {
+                    af = AF_INET6;
+                    memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in6));
+                }
+                break;
+            }
+        }
+        if (rp == nullptr)
+        {
+            // fallback: if we can't find prefered AF, then we choose alternative.
             for (rp = e.data.get(); rp != nullptr; rp = rp->ai_next)
             {
                 if (rp->ai_family == AF_INET)
                 {
-                    if (rp->ai_family == AF_INET)
-                    {
-                        af = AF_INET;
-                        memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in));
-                    }
-                    else if (rp->ai_family == AF_INET6)
-                    {
-                        af = AF_INET6;
-                        memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in6));
-                    }
-                    break;
+                    af = AF_INET;
+                    memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in));
                 }
-            }
-            if (rp == nullptr)
-            {
-                // fallback: if we can't find prefered AF, then we choose alternative.
-                for (rp = e.data.get(); rp != nullptr; rp = rp->ai_next)
+                else if (rp->ai_family == AF_INET6)
                 {
-                    if (rp->ai_family == AF_INET)
-                    {
-                        af = AF_INET;
-                        memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in));
-                    }
-                    else if (rp->ai_family == AF_INET6)
-                    {
-                        af = AF_INET6;
-                        memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in6));
-                    }
-                    break;
+                    af = AF_INET6;
+                    memcpy(&storage, rp->ai_addr, sizeof(struct sockaddr_in6));
                 }
+                break;
             }
-            if (rp)
-                return 0;
-            return -1;
         }
+        if (rp)
+            return 0;
+        return -1;
+    }
 
-      protected:
-        bool errored = false;
+  protected:
+    bool errored = false;
+    int af = AF_INET;
 
-        int af = AF_INET;
-        int successCount = 0;
-        Qv2rayPlugin::Latency::LatencyTestResponse response;
-        Qv2rayPlugin::Latency::LatencyTestRequest request;
-        sockaddr_storage storage;
-        char digitBuffer[20] = { 0 };
-        std::shared_ptr<uvw::GetAddrInfoReq> getAddrHandle;
-    };
-} // namespace Qv2rayBase::BuiltinPlugins::Latency
+    std::shared_ptr<uvw::Loop> loop;
+    Qv2rayPlugin::Latency::LatencyTestResponse response;
+    Qv2rayPlugin::Latency::LatencyTestRequest request;
+    sockaddr_storage storage;
+    char digitBuffer[20] = { 0 };
+    std::shared_ptr<uvw::GetAddrInfoReq> getAddrHandle;
+};

@@ -2,16 +2,21 @@
 
 #include "DNSBase.hpp"
 
-namespace Qv2rayBase::BuiltinPlugins::Latency
+class TCPTestEngine : public CommonDNSBasedAsyncLatencyTestEngine<TCPTestEngine>
 {
-    class Static_TCP_LatencyTestEngine : public CommonDNSBasedAsyncLatencyTestEngine<Static_TCP_LatencyTestEngine>
-    {
-      public:
-        virtual ~Static_TCP_LatencyTestEngine() = default;
-        using CommonDNSBasedAsyncLatencyTestEngine<Static_TCP_LatencyTestEngine>::CommonDNSBasedAsyncLatencyTestEngine;
+    Q_OBJECT
+  public:
+    virtual ~TCPTestEngine() = default;
+    TCPTestEngine();
+    using CommonDNSBasedAsyncLatencyTestEngine<TCPTestEngine>::CommonDNSBasedAsyncLatencyTestEngine;
 
-      protected:
-        virtual void Prepare(std::shared_ptr<uvw::Loop>) override;
-        virtual void StartTest(std::shared_ptr<uvw::Loop>) override;
-    };
-} // namespace Qv2rayBase::BuiltinPlugins::Latency
+  signals:
+    void OnLatencyTestFinishedSignal(const ConnectionId &, const Qv2rayPlugin::Latency::LatencyTestResponse &) override;
+
+  protected:
+    virtual void Prepare() override;
+    virtual void StartTestAsync() override;
+
+  private:
+    void CheckAndReturn();
+};
