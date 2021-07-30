@@ -15,9 +15,10 @@ add_library(QvPlugin-LatencyTest SHARED
 
 target_link_libraries(QvPlugin-LatencyTest
     PRIVATE
-        Qt::Core
-        Qv2ray::libuvw
-        Qv2ray::QvPluginInterface
-        Iphlpapi )
+    Qv2ray::libuvw)
 
 qv2ray_configure_plugin(QvPlugin-LatencyTest)
+
+if(WIN32)
+    target_link_libraries(QvPlugin-LatencyTest PRIVATE Iphlpapi)
+endif()
