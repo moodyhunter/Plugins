@@ -70,7 +70,7 @@ namespace Qv2rayBase::BuiltinPlugins::Latency::details
         bool modified_;
     };
 
-} // namespace Qv2rayBase::StaticPlugin::details
+} // namespace Qv2rayBase::BuiltinPlugins::Latency::details
 
 namespace Qv2rayBase::BuiltinPlugins::Latency
 {
@@ -81,7 +81,7 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         , public Qv2rayPlugin::Latency::LatencyTestEngine
     {
       public:
-        static constexpr int TOTAL_TEST_COUNT = 3;
+        static constexpr int TOTAL_TEST_COUNT = 5;
         CommonDNSBasedAsyncLatencyTestEngine() = default;
         virtual ~CommonDNSBasedAsyncLatencyTestEngine() = default;
 
@@ -112,12 +112,12 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
             Prepare(loop);
             if (errored)
                 return response;
-            response.total = TOTAL_TEST_COUNT;
+            response.total = 0;
             response.failed = 0;
             response.worst = 0;
             response.avg = 0;
 
-            if (isAddr(req.host, req.port) == -1)
+            if ((af = isAddr(req.host, req.port)), af == -1)
             {
                 getAddrHandle = loop->resource<uvw::GetAddrInfoReq>();
                 sprintf(digitBuffer, "%d", req.port);
@@ -234,4 +234,4 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         char digitBuffer[20] = { 0 };
         std::shared_ptr<uvw::GetAddrInfoReq> getAddrHandle;
     };
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency

@@ -1,6 +1,8 @@
 #include "BuiltinLatencyTesterPlugin.hpp"
 
+#include "latency/ICMPLatencyTester.hpp"
 #include "latency/TCPLatencyTester.hpp"
+#include "uvw.hpp"
 
 namespace Qv2rayBase::BuiltinPlugins::Latency
 {
@@ -12,8 +14,10 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         const LatencyTestEngineId ICMPEngineId{ "qv2ray_icmp" };
         virtual QList<LatencyTestEngineInfo> PluginLatencyTestEngines() const
         {
-            return { LatencyTestEngineInfo{ TCPEngineId, true, "TCP Connect Latency", "", { []() { return std::make_unique<Static_TCP_LatencyTestEngine>(); } } },
-                     LatencyTestEngineInfo{ ICMPEngineId, true, "ICMP Ping Latency", "", { []() { return std::make_unique<Static_TCP_LatencyTestEngine>(); } } } };
+            return {
+                LatencyTestEngineInfo{ TCPEngineId, true, "TCP Connect Latency", "", { []() { return std::make_shared<Static_TCP_LatencyTestEngine>(); } } },
+                // LatencyTestEngineInfo{ ICMPEngineId, true, "ICMP Ping Latency", "", { []() { return std::make_unique<Static_ICMP_LatencyTestEngine>(); } } },
+            };
         };
         Q_DISABLE_COPY(LatencyHandler)
     };
@@ -38,4 +42,4 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
     {
     }
 
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency

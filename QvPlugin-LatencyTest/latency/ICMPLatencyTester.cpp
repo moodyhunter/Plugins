@@ -105,100 +105,96 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         timeoutTimer = loop->resource<uvw::TimerHandle>();
         uvw::OSSocketHandle osSocketHandle{ socketId };
         pollHandle = loop->resource<uvw::PollHandle>(osSocketHandle);
-        timeoutTimer->once<uvw::TimerEvent>(
-            [this, ptr = std::weak_ptr<Static_ICMP_LatencyTestEngine>{ shared_from_this() }](auto &, uvw::TimerHandle &)
+        timeoutTimer->once<uvw::TimerEvent>([this, ptr = std::weak_ptr<Static_ICMP_LatencyTestEngine>{ shared_from_this() }](auto &, uvw::TimerHandle &) {
+            if (ptr.expired())
+                return;
+            else
             {
-                if (ptr.expired())
-                    return;
-                else
-                {
-                    auto p = ptr.lock();
-                    pollHandle->clear();
-                    if (!pollHandle->closing())
-                        pollHandle->stop();
-                    pollHandle->close();
-                    successCount = 0;
-                    response.failed = response.total = TOTAL_TEST_COUNT;
-                    checkAndFinalize();
-                }
-            });
+                auto p = ptr.lock();
+                pollHandle->clear();
+                if (!pollHandle->closing())
+                    pollHandle->stop();
+                pollHandle->close();
+                successCount = 0;
+                response.failed = response.total = TOTAL_TEST_COUNT;
+                checkAndFinalize();
+            }
+        });
 
         timeoutTimer->start(uvw::TimerHandle::Time{ 10000 }, uvw::TimerHandle::Time{ 0 });
         auto pollEvent = uvw::Flags<uvw::PollHandle::Event>::from<uvw::PollHandle::Event::READABLE>();
-        pollHandle->on<uvw::PollEvent>(
-            [this, ptr = shared_from_this()](uvw::PollEvent &, uvw::PollHandle &h)
+        pollHandle->on<uvw::PollEvent>([this, ptr = shared_from_this()](uvw::PollEvent &, uvw::PollHandle &h) {
+            timeval end;
+            sockaddr_in addr;
+            socklen_t slen = sizeof(sockaddr_in);
+            int rlen = 0;
+            char buf[1024];
+            do
             {
-                timeval end;
-                sockaddr_in addr;
-                socklen_t slen = sizeof(sockaddr_in);
-                int rlen = 0;
-                char buf[1024];
                 do
                 {
-                    do
-                    {
-                        rlen = recvfrom(socketId, buf, 1024, 0, (struct sockaddr *) &addr, &slen);
-                    } while (rlen == -1 && errno == EINTR);
+                    rlen = recvfrom(socketId, buf, 1024, 0, (struct sockaddr *) &addr, &slen);
+                } while (rlen == -1 && errno == EINTR);
 
                 // skip malformed
 #ifdef Q_OS_MAC
-                    if (rlen < sizeof(icmp) + 20)
+                if (rlen < sizeof(icmp) + 20)
 #else
-                    if (rlen < sizeof(icmp))
+                if (rlen < sizeof(icmp))
 #endif
-                        continue;
+                    continue;
 
 #ifdef Q_OS_MAC
-                    auto &resp = *reinterpret_cast<icmp *>(buf + 20);
+                auto &resp = *reinterpret_cast<icmp *>(buf + 20);
 #else
-                    auto &resp = *reinterpret_cast<icmp *>(buf);
+                auto &resp = *reinterpret_cast<icmp *>(buf);
 #endif
-                    // skip the ones we didn't send
-                    auto cur_seq = resp.icmp_hun.ih_idseq.icd_seq;
-                    if (cur_seq >= seq)
-                        continue;
+                // skip the ones we didn't send
+                auto cur_seq = resp.icmp_hun.ih_idseq.icd_seq;
+                if (cur_seq >= seq)
+                    continue;
 
-                    switch (resp.icmp_type)
-                    {
-                        case ICMP_ECHOREPLY:
-                            gettimeofday(&end, nullptr);
-                            response.avg += 1000 * (end.tv_sec - startTimevals[cur_seq - 1].tv_sec) + (end.tv_usec - startTimevals[cur_seq - 1].tv_usec) / 1000;
-                            successCount++;
-                            checkAndFinalize();
-                            continue;
-                        case ICMP_UNREACH:
-                            response.error = "EPING_DST: " + QObject::tr("Destination unreachable");
-                            response.failed++;
-                            if (checkAndFinalize())
-                            {
-                                h.clear();
-                                h.close();
-                                return;
-                            }
-                            continue;
-                        case ICMP_TIMXCEED:
-                            response.error = "EPING_TIME: " + QObject::tr("Timeout");
-                            response.failed++;
-                            if (checkAndFinalize())
-                            {
-                                h.clear();
-                                h.close();
-                                return;
-                            }
-                            continue;
-                        default:
-                            response.error = "EPING_UNK: " + QObject::tr("Unknown error");
-                            response.failed++;
-                            if (checkAndFinalize())
-                            {
-                                h.clear();
-                                h.close();
-                                return;
-                            }
-                            continue;
-                    }
-                } while (rlen > 0);
-            });
+                switch (resp.icmp_type)
+                {
+                    case ICMP_ECHOREPLY:
+                        gettimeofday(&end, nullptr);
+                        response.avg += 1000 * (end.tv_sec - startTimevals[cur_seq - 1].tv_sec) + (end.tv_usec - startTimevals[cur_seq - 1].tv_usec) / 1000;
+                        successCount++;
+                        checkAndFinalize();
+                        continue;
+                    case ICMP_UNREACH:
+                        response.error = "EPING_DST: " + QObject::tr("Destination unreachable");
+                        response.failed++;
+                        if (checkAndFinalize())
+                        {
+                            h.clear();
+                            h.close();
+                            return;
+                        }
+                        continue;
+                    case ICMP_TIMXCEED:
+                        response.error = "EPING_TIME: " + QObject::tr("Timeout");
+                        response.failed++;
+                        if (checkAndFinalize())
+                        {
+                            h.clear();
+                            h.close();
+                            return;
+                        }
+                        continue;
+                    default:
+                        response.error = "EPING_UNK: " + QObject::tr("Unknown error");
+                        response.failed++;
+                        if (checkAndFinalize())
+                        {
+                            h.clear();
+                            h.close();
+                            return;
+                        }
+                        continue;
+                }
+            } while (rlen > 0);
+        });
 
         pollHandle->start(pollEvent);
 
@@ -247,7 +243,7 @@ typedef VOID(NTAPI *PIO_APC_ROUTINE)(IN PVOID ApcContext, IN PIO_STATUS_BLOCK Io
 namespace Qv2rayBase::BuiltinPlugins::Latency
 {
 
-    Static_ICMP_LatencyTestEngine ::~Static_ICMP_LatencyTestEngine()
+    Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
     {
     }
 
@@ -355,5 +351,5 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
     {
         return response.failed + successCount == response.total;
     }
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency
 #endif

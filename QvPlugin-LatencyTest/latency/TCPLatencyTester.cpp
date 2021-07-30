@@ -1,5 +1,7 @@
 #include "TCPLatencyTester.hpp"
 
+#include "WinSock2.h"
+
 namespace Qv2rayBase::BuiltinPlugins::Latency
 {
     constexpr int TCP_CONNECTION_TIMEOUT_SECS = 5;
@@ -41,31 +43,27 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         {
             auto tcpClient = loop->resource<uvw::TCPHandle>();
             tcpClient->open(getSocket(af, SOCK_STREAM, IPPROTO_TCP));
-            tcpClient->once<uvw::ErrorEvent>(
-                [ptr = shared_from_this(), this](const uvw::ErrorEvent e, uvw::TCPHandle &h)
-                {
-                    response.failed++;
-                    response.error = e.what();
-                    h.clear();
-                    h.close();
-                });
-            tcpClient->once<uvw::ConnectEvent>(
-                [ptr = shared_from_this(), start = system_clock::now(), this](auto &, auto &h)
-                {
-                    successCount++;
-                    system_clock::time_point end = system_clock::now();
-                    auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
-                    long ms = milliseconds.count();
-                    response.avg += ms;
+            tcpClient->once<uvw::ErrorEvent>([ptr = shared_from_this(), this](const uvw::ErrorEvent e, uvw::TCPHandle &h) {
+                response.failed++;
+                response.error = e.what();
+                h.clear();
+                h.close();
+            });
+            tcpClient->once<uvw::ConnectEvent>([ptr = shared_from_this(), start = system_clock::now(), this](auto &, auto &h) {
+                successCount++;
+                system_clock::time_point end = system_clock::now();
+                auto milliseconds = std::chrono::duration_cast<std::chrono::milliseconds>(end - start);
+                long ms = milliseconds.count();
+                response.avg += ms;
 #undef max
 #undef min
-                    response.worst = std::max(response.worst, ms);
-                    response.best = std::min(response.best, ms);
-                    h.clear();
-                    h.close();
-                });
+                response.worst = std::max(response.worst, ms);
+                response.best = std::min(response.best, ms);
+                h.clear();
+                h.close();
+            });
             tcpClient->connect(reinterpret_cast<const sockaddr &>(storage));
         }
     }
 
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency

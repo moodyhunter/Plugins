@@ -36,4 +36,4 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         std::shared_ptr<uvw::TimerHandle> waitHandleTimer;
 #endif
     };
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency

@@ -17,6 +17,7 @@ target_link_libraries(QvPlugin-LatencyTest
     PRIVATE
         Qt::Core
         Qv2ray::libuvw
-        Qv2ray::QvPluginInterface)
+        Qv2ray::QvPluginInterface
+        Iphlpapi )
 
 qv2ray_configure_plugin(QvPlugin-LatencyTest)

@@ -14,4 +14,4 @@ namespace Qv2rayBase::BuiltinPlugins::Latency
         virtual void Prepare(std::shared_ptr<uvw::Loop>) override;
         virtual void StartTest(std::shared_ptr<uvw::Loop>) override;
     };
-} // namespace Qv2rayBase::StaticPlugin
+} // namespace Qv2rayBase::BuiltinPlugins::Latency
