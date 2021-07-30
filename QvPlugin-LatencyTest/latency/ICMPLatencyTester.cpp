@@ -41,7 +41,7 @@ uint16_t ping_checksum(const char *buf, size_t size)
     return (uint16_t) ~sum;
 }
 
-void Static_ICMP_LatencyTestEngine::deinit()
+void ICMPTestEngine::deinit()
 {
     if (socketId >= 0)
     {
@@ -50,7 +50,7 @@ void Static_ICMP_LatencyTestEngine::deinit()
     }
 }
 
-bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
+bool ICMPTestEngine::checkAndFinalize()
 {
 #pragma message("TODO:? ")
     if (response.failed /*+ successCount*/ == TOTAL_TEST_COUNT)
@@ -73,12 +73,12 @@ bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
     return false;
 }
 
-Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
+ICMPTestEngine::~ICMPTestEngine()
 {
     deinit();
 }
 
-void Static_ICMP_LatencyTestEngine::Prepare()
+void ICMPTestEngine::Prepare()
 {
     int ttl = 30;
     if (((socketId = socket(PF_INET, SOCK_DGRAM, IPPROTO_ICMP)) < 0))
@@ -99,26 +99,20 @@ void Static_ICMP_LatencyTestEngine::Prepare()
     }
 }
 
-void Static_ICMP_LatencyTestEngine::StartTestAsync()
+void ICMPTestEngine::StartTestAsync()
 {
     timeoutTimer = loop->resource<uvw::TimerHandle>();
     uvw::OSSocketHandle osSocketHandle{ socketId };
     pollHandle = loop->resource<uvw::PollHandle>(osSocketHandle);
     timeoutTimer->once<uvw::TimerEvent>(
-        [this, ptr = std::weak_ptr<Static_ICMP_LatencyTestEngine>{ shared_from_this() }](auto &, uvw::TimerHandle &)
+        [ptr = shared_from_this()](auto &, uvw::TimerHandle &)
         {
-            if (ptr.expired())
-                return;
-            else
-            {
-                auto p = ptr.lock();
-                pollHandle->clear();
-                if (!pollHandle->closing())
-                    pollHandle->stop();
-                pollHandle->close();
-                response.failed = response.total = TOTAL_TEST_COUNT;
-                checkAndFinalize();
-            }
+            ptr->pollHandle->clear();
+            if (!ptr->pollHandle->closing())
+                ptr->pollHandle->stop();
+            ptr->pollHandle->close();
+            ptr->response.failed = ptr->response.total = TOTAL_TEST_COUNT;
+            ptr->checkAndFinalize();
         });
 
     timeoutTimer->start(uvw::TimerHandle::Time{ 10000 }, uvw::TimerHandle::Time{ 0 });
@@ -141,10 +135,11 @@ void Static_ICMP_LatencyTestEngine::StartTestAsync()
             // skip malformed
 #ifdef Q_OS_MAC
                 if (rlen < sizeof(icmp) + 20)
+                    continue;
 #else
                 if (rlen < sizeof(icmp))
-#endif
                     continue;
+#endif
 
 #ifdef Q_OS_MAC
                 auto &resp = *reinterpret_cast<icmp *>(buf + 20);
@@ -241,15 +236,15 @@ typedef VOID(NTAPI *PIO_APC_ROUTINE)(IN PVOID ApcContext, IN PIO_STATUS_BLOCK Io
 #define PIO_APC_ROUTINE_DEFINED
 #include <IcmpAPI.h>
 
-Static_ICMP_LatencyTestEngine::~Static_ICMP_LatencyTestEngine()
+ICMPTestEngine::~ICMPTestEngine()
 {
 }
 
-void Static_ICMP_LatencyTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
+void ICMPTestEngine::Prepare(std::shared_ptr<uvw::Loop>)
 {
 }
 
-void Static_ICMP_LatencyTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
+void ICMPTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
 {
     waitHandleTimer = loop->resource<uvw::TimerHandle>();
     waitHandleTimer->on<uvw::TimerEvent>(
@@ -270,7 +265,7 @@ void Static_ICMP_LatencyTestEngine::StartTest(std::shared_ptr<uvw::Loop> loop)
     waitHandleTimer->start(uvw::TimerHandle::Time{ 500 }, uvw::TimerHandle::Time{ 500 });
 }
 
-void Static_ICMP_LatencyTestEngine::pingImpl()
+void ICMPTestEngine::pingImpl()
 {
     constexpr WORD payload_size = 1;
     constexpr DWORD reply_buf_size = sizeof(ICMP_ECHO_REPLY) + payload_size + 8;
@@ -349,7 +344,7 @@ void Static_ICMP_LatencyTestEngine::pingImpl()
         reply_buf_size, 10000);
 }
 
-bool Static_ICMP_LatencyTestEngine::checkAndFinalize()
+bool ICMPTestEngine::checkAndFinalize()
 {
     return response.failed + successCount == response.total;
 }

@@ -2,15 +2,19 @@
 
 #include "DNSBase.hpp"
 
-class Static_ICMP_LatencyTestEngine : public CommonDNSBasedAsyncLatencyTestEngine<Static_ICMP_LatencyTestEngine>
+class ICMPTestEngine : public CommonDNSBasedAsyncLatencyTestEngine<ICMPTestEngine>
 {
+    Q_OBJECT
   public:
-    virtual ~Static_ICMP_LatencyTestEngine();
-    using CommonDNSBasedAsyncLatencyTestEngine<Static_ICMP_LatencyTestEngine>::CommonDNSBasedAsyncLatencyTestEngine;
+    virtual ~ICMPTestEngine();
+    using CommonDNSBasedAsyncLatencyTestEngine<ICMPTestEngine>::CommonDNSBasedAsyncLatencyTestEngine;
 
   protected:
     virtual void Prepare() override;
     virtual void StartTestAsync() override;
+
+  signals:
+    void OnLatencyTestFinishedSignal(const ConnectionId &, const Qv2rayPlugin::Latency::LatencyTestResponse &) override;
 
   private:
     bool checkAndFinalize();

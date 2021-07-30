@@ -13,8 +13,8 @@ class LatencyHandler : public ILatencyHandler
     virtual QList<LatencyTestEngineInfo> PluginLatencyTestEngines() const
     {
         return {
-            LatencyTestEngineInfo{ TCPEngineId, true, "TCP Connect Latency", "", { []() { return std::make_shared<TCPTestEngine>(); } } },
-            // LatencyTestEngineInfo{ ICMPEngineId, true, "ICMP Ping Latency", "", { []() { return std::make_unique<Static_ICMP_LatencyTestEngine>(); } } },
+            LatencyTestEngineInfo{ TCPEngineId, true, "TCP Connect Latency", "", [] { return std::make_shared<TCPTestEngine>(); } },
+            //            LatencyTestEngineInfo{ ICMPEngineId, true, "ICMP Ping Latency", "", [] { return std::make_unique<ICMPTestEngine>(); } },
         };
     };
     Q_DISABLE_COPY(LatencyHandler)
@@ -24,7 +24,7 @@ const QvPluginMetadata BuiltinLatencyTesterPlugin::GetMetadata() const
 {
     return { "Qv2rayBase Builtin Latency Test Engine Provider",                                        //
              "Qv2rayBase Development Team",                                                            //
-             PluginId{ "qvplugin_builtin_latency_tester" },                                            //
+             PluginId{ "BuiltinLatencyTester" },                                                       //
              "Builtin Latency Test Engine Provider, with TCP and ICMP latency test engine supported.", //
              QUrl{},                                                                                   //
              { COMPONENT_LATENCY_TEST_ENGINE } };
