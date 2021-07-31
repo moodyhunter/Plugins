@@ -3,14 +3,14 @@
 #include "QvPlugin/Gui/QvGUIPluginInterface.hpp"
 #include "ui_OutboundEditor.h"
 
-class OutboundEditor
+class NaiveOutboundEditor
     : public Qv2rayPlugin::Gui::PluginProtocolEditor
     , private Ui::OutboundEditor
 {
     Q_OBJECT
 
   public:
-    explicit OutboundEditor(QWidget *parent = nullptr);
+    explicit NaiveOutboundEditor(QWidget *parent = nullptr);
 
   public:
     virtual void Load() override;

@@ -1,7 +1,11 @@
 project(QvPlugin-NaiveProxy)
 cmake_minimum_required(VERSION 3.1.0)
 
-add_library(${PROJECT_NAME} SHARED
+qv2ray_add_plugin(QvPlugin-NaiveProxy Widgets
+    HTTP_TO_SOCKS
+    CLASS_NAME "NaiveProxyPlugin")
+
+target_sources(QvPlugin-NaiveProxy PRIVATE
     SimplePlugin.hpp
     SimplePlugin.cpp
     core/Serializer.cpp
@@ -16,5 +20,3 @@ add_library(${PROJECT_NAME} SHARED
     ui/SettingsWidget.ui
     ui/UIInterface.hpp
     resx.qrc)
-
-qv2ray_configure_plugin(${PROJECT_NAME} Widgets HTTP_TO_SOCKS)

@@ -1,11 +1,11 @@
 #include "OutboundEditor.hpp"
 
-OutboundEditor::OutboundEditor(QWidget *parent) : Qv2rayPlugin::Gui::PluginProtocolEditor(parent)
+NaiveOutboundEditor::NaiveOutboundEditor(QWidget *parent) : Qv2rayPlugin::Gui::PluginProtocolEditor(parent)
 {
     setupUi(this);
 }
 
-void OutboundEditor::Load()
+void NaiveOutboundEditor::Load()
 {
     const auto protocol = settings["protocol"].toString();
 
@@ -15,7 +15,7 @@ void OutboundEditor::Load()
     checkPadding->setChecked(settings["padding"].toBool());
 }
 
-void OutboundEditor::changeEvent(QEvent *e)
+void NaiveOutboundEditor::changeEvent(QEvent *e)
 {
 
     QWidget::changeEvent(e);
@@ -26,22 +26,22 @@ void OutboundEditor::changeEvent(QEvent *e)
     }
 }
 
-void OutboundEditor::on_comboProtocol_currentTextChanged(const QString &arg1)
+void NaiveOutboundEditor::on_comboProtocol_currentTextChanged(const QString &arg1)
 {
     root["protocol"] = arg1;
 }
 
-void OutboundEditor::on_textUsername_textEdited(const QString &arg1)
+void NaiveOutboundEditor::on_textUsername_textEdited(const QString &arg1)
 {
     root["username"] = arg1;
 }
 
-void OutboundEditor::on_textPassword_textEdited(const QString &arg1)
+void NaiveOutboundEditor::on_textPassword_textEdited(const QString &arg1)
 {
     root["password"] = arg1;
 }
 
-void OutboundEditor::on_checkPadding_stateChanged(int arg1)
+void NaiveOutboundEditor::on_checkPadding_stateChanged(int arg1)
 {
     root["padding"] = arg1 == Qt::Checked;
 }

@@ -22,7 +22,7 @@ class NaiveUIInterface : public Qv2rayPlugin::Gui::Qv2rayGUIInterface
     }
     virtual PluginEditorDescriptor GetOutboundEditors() const override
     {
-        return { make_editor_info<OutboundEditor>("naive", "NaiveProxy") };
+        return { make_editor_info<NaiveOutboundEditor>("naive", "NaiveProxy") };
     }
     virtual std::unique_ptr<Qv2rayPlugin::Gui::PluginMainWindowWidget> GetMainWindowWidget() const override
     {

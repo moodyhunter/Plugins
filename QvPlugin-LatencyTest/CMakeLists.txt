@@ -2,9 +2,14 @@ set(CMAKE_AUTOMOC ON)
 
 list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_LIST_DIR}/cmake")
 
-include(${CMAKE_CURRENT_LIST_DIR}/cmake/libuvw.cmake)
+if(NOT TARGET Qv2ray::libuvw)
+    include(${CMAKE_CURRENT_LIST_DIR}/cmake/libuvw.cmake)
+endif()
 
-add_library(QvPlugin-LatencyTest SHARED
+qv2ray_add_plugin(QvPlugin-LatencyTest
+    CLASS_NAME "BuiltinLatencyTesterPlugin")
+
+target_sources(QvPlugin-LatencyTest PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/BuiltinLatencyTesterPlugin.hpp
     ${CMAKE_CURRENT_LIST_DIR}/BuiltinLatencyTesterPlugin.cpp
     ${CMAKE_CURRENT_LIST_DIR}/latency/DNSBase.hpp
@@ -13,11 +18,7 @@ add_library(QvPlugin-LatencyTest SHARED
     ${CMAKE_CURRENT_LIST_DIR}/latency/ICMPLatencyTester.hpp
     ${CMAKE_CURRENT_LIST_DIR}/latency/ICMPLatencyTester.cpp)
 
-target_link_libraries(QvPlugin-LatencyTest
-    PRIVATE
-    Qv2ray::libuvw)
-
-qv2ray_configure_plugin(QvPlugin-LatencyTest)
+target_link_libraries(QvPlugin-LatencyTest PRIVATE Qv2ray::libuvw)
 
 if(WIN32)
     target_link_libraries(QvPlugin-LatencyTest PRIVATE Iphlpapi)
