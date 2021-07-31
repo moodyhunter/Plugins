@@ -22,12 +22,14 @@ class LatencyHandler : public ILatencyHandler
 
 const QvPluginMetadata BuiltinLatencyTesterPlugin::GetMetadata() const
 {
-    return { "Qv2rayBase Builtin Latency Test Engine Provider",                                        //
-             "Qv2rayBase Development Team",                                                            //
-             PluginId{ "BuiltinLatencyTester" },                                                       //
-             "Builtin Latency Test Engine Provider, with TCP and ICMP latency test engine supported.", //
-             QUrl{},                                                                                   //
-             { COMPONENT_LATENCY_TEST_ENGINE } };
+    return {
+        "TCPing Test Engine",
+        "Qv2rayBase Development Team",
+        PluginId{ "BuiltinLatencyTester" },
+        "This plugin provides latency test engine.",
+        QUrl{},
+        { COMPONENT_LATENCY_TEST_ENGINE },
+    };
 }
 
 bool BuiltinLatencyTesterPlugin::InitializePlugin()
