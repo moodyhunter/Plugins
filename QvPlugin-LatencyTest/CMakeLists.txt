@@ -18,7 +18,9 @@ target_sources(QvPlugin-LatencyTest PRIVATE
     ${CMAKE_CURRENT_LIST_DIR}/latency/ICMPLatencyTester.hpp
     ${CMAKE_CURRENT_LIST_DIR}/latency/ICMPLatencyTester.cpp)
 
-target_link_libraries(QvPlugin-LatencyTest PRIVATE Qv2ray::libuvw)
+target_link_libraries(QvPlugin-LatencyTest
+    PRIVATE
+    Qv2ray::libuvw)
 
 if(WIN32)
     target_link_libraries(QvPlugin-LatencyTest PRIVATE Iphlpapi)

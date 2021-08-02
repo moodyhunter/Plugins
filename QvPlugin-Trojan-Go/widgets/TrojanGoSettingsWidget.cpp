@@ -62,7 +62,7 @@ void TrojanGoSettingsWidget::on_selectKernelBtn_clicked()
     }
 
     // debounce: recover in 800ms
-    debounceTimer.singleShot(800, this, &TrojanGoSettingsWidget::debounceUnfreeze);
+    debounceTimer.singleShot(800ms, this, &TrojanGoSettingsWidget::debounceUnfreeze);
 }
 
 void TrojanGoSettingsWidget::debounceUnfreeze()
